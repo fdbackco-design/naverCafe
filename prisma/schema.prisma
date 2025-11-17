@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  displayName String?
+  avatarUrl   String?
+  
+  naverAccount NaverAccount?
+  cafeTargets  CafeTarget[]
+  cafePosts    CafePost[]
+}
+
+model NaverAccount {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  naverUserId  String   @unique // 네이버에서 제공하는 고유 ID
+  accessToken  String   // 암호화 고려 가능
+  refreshToken String
+  expiresAt    DateTime // 토큰 만료 시간
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([naverUserId])
+}
+
+model CafeTarget {
+  id          String   @id @default(uuid())
+  userId      String
+  cafeName    String
+  clubId      String   // 네이버 카페 ID
+  menuId      String   // 게시판 ID
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([clubId, menuId])
+}
+
+model CafePost {
+  id         String   @id @default(uuid())
+  userId     String
+  clubId     String
+  menuId     String
+  subject    String
+  content    String   @db.Text
+  articleId  String?  // 네이버에서 반환한 게시글 ID
+  articleUrl String?
+  cafeUrl    String?
+  createdAt  DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@index([clubId, menuId])
+}
+
