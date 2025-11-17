@@ -90,6 +90,12 @@ export async function POST(request: NextRequest) {
           options,
         })
 
+        // 응답 구조 안전하게 처리
+        const result = response.result
+        if (!result || !result.articleId) {
+          throw new Error(`네이버 API 응답에 articleId가 없습니다: ${JSON.stringify(response)}`)
+        }
+
         // 성공 시 DB에 기록
         await prisma.cafePost.create({
           data: {
@@ -98,9 +104,9 @@ export async function POST(request: NextRequest) {
             menuId: target.menuId,
             subject,
             content: content.substring(0, 500), // 요약만 저장
-            articleId: String(response.result.articleId),
-            articleUrl: response.result.articleUrl,
-            cafeUrl: response.result.cafeUrl,
+            articleId: String(result.articleId),
+            articleUrl: result.articleUrl || null,
+            cafeUrl: result.cafeUrl || null,
           },
         })
 
@@ -108,9 +114,9 @@ export async function POST(request: NextRequest) {
           clubId: target.clubId,
           menuId: target.menuId,
           ok: true,
-          articleId: response.result.articleId,
-          articleUrl: response.result.articleUrl,
-          cafeUrl: response.result.cafeUrl,
+          articleId: result.articleId,
+          articleUrl: result.articleUrl || null,
+          cafeUrl: result.cafeUrl || null,
         })
       } catch (error: any) {
         console.error(`카페 ${target.clubId}/${target.menuId} 글 작성 실패:`, error)

@@ -48,37 +48,50 @@ export async function GET(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setSeconds(expiresAt.getSeconds() + tokenData.expires_in)
 
-    // User 및 NaverAccount upsert
-    const user = await prisma.user.upsert({
-      where: { id: naverUser.id },
-      update: {
-        displayName: naverUser.nickname || null,
-        avatarUrl: naverUser.profile_image || null,
-        updatedAt: new Date(),
-      },
-      create: {
-        id: naverUser.id,
-        displayName: naverUser.nickname || null,
-        avatarUrl: naverUser.profile_image || null,
-      },
+    // NaverAccount로 기존 사용자 찾기
+    let naverAccount = await prisma.naverAccount.findUnique({
+      where: { naverUserId: naverUser.id },
+      include: { user: true },
     })
 
-    await prisma.naverAccount.upsert({
-      where: { userId: user.id },
-      update: {
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-        expiresAt,
-        updatedAt: new Date(),
-      },
-      create: {
-        userId: user.id,
-        naverUserId: naverUser.id,
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-        expiresAt,
-      },
-    })
+    let user
+
+    if (naverAccount) {
+      // 기존 사용자 업데이트
+      user = await prisma.user.update({
+        where: { id: naverAccount.userId },
+        data: {
+          displayName: naverUser.nickname || null,
+          avatarUrl: naverUser.profile_image || null,
+        },
+      })
+
+      // NaverAccount 업데이트
+      await prisma.naverAccount.update({
+        where: { id: naverAccount.id },
+        data: {
+          accessToken: tokenData.access_token,
+          refreshToken: tokenData.refresh_token,
+          expiresAt,
+        },
+      })
+    } else {
+      // 새 사용자 생성
+      user = await prisma.user.create({
+        data: {
+          displayName: naverUser.nickname || null,
+          avatarUrl: naverUser.profile_image || null,
+          naverAccount: {
+            create: {
+              naverUserId: naverUser.id,
+              accessToken: tokenData.access_token,
+              refreshToken: tokenData.refresh_token,
+              expiresAt,
+            },
+          },
+        },
+      })
+    }
 
     // 세션 생성
     const sessionToken = await createSession(user.id)
