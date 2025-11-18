@@ -83,11 +83,16 @@ prisma/
 ## 📦 배포 (Vercel)
 
 1. Vercel에 프로젝트를 연결합니다
-2. 환경 변수를 Vercel 대시보드에서 설정합니다
-3. `DATABASE_URL`은 Supabase에서 제공하는 연결 문자열을 사용합니다
-4. `NAVER_REDIRECT_URI`는 프로덕션 도메인으로 변경합니다
-
-빌드 시 Prisma 마이그레이션이 자동으로 실행됩니다 (`package.json`의 `build` 스크립트 참조).
+2. 환경 변수를 Vercel 대시보드에서 설정합니다:
+   - `DATABASE_URL`: Supabase에서 제공하는 연결 문자열
+   - `JWT_SECRET`: 랜덤 문자열 (예: `openssl rand -base64 32`)
+   - `NAVER_CLIENT_ID`: 네이버 개발자 센터에서 발급받은 Client ID
+   - `NAVER_CLIENT_SECRET`: 네이버 개발자 센터에서 발급받은 Client Secret
+   - `NAVER_REDIRECT_URI`: 프로덕션 도메인 (예: `https://your-domain.vercel.app/api/auth/naver/callback`)
+3. 데이터베이스 마이그레이션:
+   - 로컬에서 `npx prisma migrate deploy`를 실행하여 마이그레이션을 적용하거나
+   - Vercel의 빌드 후 훅에서 실행할 수 있습니다
+   - 또는 Supabase 대시보드에서 직접 SQL을 실행할 수도 있습니다
 
 ## 🛠 개발 명령어
 
