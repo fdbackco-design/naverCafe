@@ -199,7 +199,16 @@ export default function MultiPostPage() {
         setFormData({
           subject: '',
           content: '',
-          options: formData.options,
+          options: {
+            openyn: true,
+            searchopen: true,
+            replyyn: true,
+            scrapyn: true,
+            metoo: true,
+            autosourcing: true,
+            rclick: true,
+            ccl: true,
+          },
         })
         setSelectedTargets(new Set())
         setImages([])
@@ -403,140 +412,6 @@ export default function MultiPostPage() {
             <br />
             • 지원 형식: JPG, PNG, GIF, WebP
           </p>
-        </div>
-
-        <div className="card">
-          <h2 style={{ marginBottom: '20px' }}>옵션</h2>
-          <div className="checkbox-group">
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="openyn"
-                checked={formData.options.openyn}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, openyn: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="openyn" style={{ margin: 0 }}>
-                공개 (openyn)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="searchopen"
-                checked={formData.options.searchopen}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, searchopen: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="searchopen" style={{ margin: 0 }}>
-                검색 허용 (searchopen)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="replyyn"
-                checked={formData.options.replyyn}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, replyyn: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="replyyn" style={{ margin: 0 }}>
-                댓글 허용 (replyyn)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="scrapyn"
-                checked={formData.options.scrapyn}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, scrapyn: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="scrapyn" style={{ margin: 0 }}>
-                스크랩 허용 (scrapyn)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="metoo"
-                checked={formData.options.metoo}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, metoo: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="metoo" style={{ margin: 0 }}>
-                공감 허용 (metoo)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="autosourcing"
-                checked={formData.options.autosourcing}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, autosourcing: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="autosourcing" style={{ margin: 0 }}>
-                자동 출처 (autosourcing)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="rclick"
-                checked={formData.options.rclick}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, rclick: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="rclick" style={{ margin: 0 }}>
-                우클릭 허용 (rclick)
-              </label>
-            </div>
-            <div className="checkbox-item">
-              <input
-                type="checkbox"
-                id="ccl"
-                checked={formData.options.ccl}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    options: { ...formData.options, ccl: e.target.checked },
-                  })
-                }
-              />
-              <label htmlFor="ccl" style={{ margin: 0 }}>
-                CCL (ccl)
-              </label>
-            </div>
-          </div>
         </div>
 
         <div style={{ marginTop: '20px', textAlign: 'right' }}>
