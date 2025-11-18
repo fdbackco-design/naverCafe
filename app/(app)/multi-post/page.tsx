@@ -20,12 +20,20 @@ interface PostResult {
   error?: string
 }
 
+interface ImagePreview {
+  id: string
+  file: File
+  preview: string // base64 data URL
+  filename: string
+}
+
 export default function MultiPostPage() {
   const [targets, setTargets] = useState<CafeTarget[]>([])
   const [selectedTargets, setSelectedTargets] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [posting, setPosting] = useState(false)
   const [results, setResults] = useState<PostResult[] | null>(null)
+  const [images, setImages] = useState<ImagePreview[]>([])
   const [formData, setFormData] = useState({
     subject: '',
     content: '',
@@ -87,6 +95,59 @@ export default function MultiPostPage() {
     }
   }
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files) return
+
+    Array.from(files).forEach((file) => {
+      // 이미지 파일만 허용
+      if (!file.type.startsWith('image/')) {
+        alert(`${file.name}은(는) 이미지 파일이 아닙니다.`)
+        return
+      }
+
+      // 파일 크기 제한 (10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`${file.name}의 크기가 너무 큽니다. (최대 10MB)`)
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const preview = e.target?.result as string
+        setImages((prev) => [
+          ...prev,
+          {
+            id: Math.random().toString(36).substring(2, 15),
+            file,
+            preview,
+            filename: file.name,
+          },
+        ])
+      }
+      reader.readAsDataURL(file)
+    })
+
+    // 같은 파일을 다시 선택할 수 있도록 input 초기화
+    e.target.value = ''
+  }
+
+  const removeImage = (id: string) => {
+    setImages((prev) => prev.filter((img) => img.id !== id))
+  }
+
+  const getContentType = (filename: string): string => {
+    const ext = filename.split('.').pop()?.toLowerCase()
+    const typeMap: Record<string, string> = {
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+    }
+    return typeMap[ext || ''] || 'image/jpeg'
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -105,6 +166,14 @@ export default function MultiPostPage() {
 
     try {
       const selected = targets.filter((t) => selectedTargets.has(t.id))
+      
+      // 이미지를 base64 형식으로 변환
+      const imageData = images.map((img) => ({
+        data: img.preview, // 이미 base64 data URL 형식
+        filename: img.filename,
+        contentType: getContentType(img.filename),
+      }))
+
       const requestBody = {
         targets: selected.map((t) => ({
           clubId: t.clubId,
@@ -112,6 +181,7 @@ export default function MultiPostPage() {
         })),
         subject: formData.subject,
         content: formData.content,
+        images: imageData.length > 0 ? imageData : undefined,
         options: formData.options,
       }
 
@@ -132,6 +202,7 @@ export default function MultiPostPage() {
           options: formData.options,
         })
         setSelectedTargets(new Set())
+        setImages([])
       }
     } catch (error) {
       console.error('글 작성 실패:', error)
@@ -235,6 +306,103 @@ export default function MultiPostPage() {
               placeholder="게시글 본문을 입력하세요. HTML 태그 사용 가능 (예: &lt;br&gt; 태그로 줄바꿈)"
             />
           </label>
+        </div>
+
+        <div className="card">
+          <h2 style={{ marginBottom: '20px' }}>이미지 첨부</h2>
+          <div style={{ marginBottom: '15px' }}>
+            <label
+              htmlFor="image-upload"
+              className="btn btn-secondary"
+              style={{
+                display: 'inline-block',
+                cursor: 'pointer',
+                padding: '10px 20px',
+              }}
+            >
+              이미지 선택
+            </label>
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageSelect}
+              style={{ display: 'none' }}
+            />
+            <span style={{ marginLeft: '15px', color: '#666', fontSize: '14px' }}>
+              {images.length > 0 && `${images.length}개 이미지 선택됨`}
+            </span>
+          </div>
+
+          {images.length > 0 && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                gap: '15px',
+                marginTop: '20px',
+              }}
+            >
+              {images.map((img) => (
+                <div
+                  key={img.id}
+                  style={{
+                    position: 'relative',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={img.preview}
+                    alt={img.filename}
+                    style={{
+                      width: '100%',
+                      height: '150px',
+                      objectFit: 'cover',
+                      display: 'block',
+                    }}
+                  />
+                  <div
+                    style={{
+                      padding: '8px',
+                      fontSize: '12px',
+                      color: '#666',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {img.filename}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(img.id)}
+                    className="btn btn-danger"
+                    style={{
+                      position: 'absolute',
+                      top: '5px',
+                      right: '5px',
+                      padding: '5px 10px',
+                      fontSize: '12px',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    삭제
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p style={{ marginTop: '15px', fontSize: '12px', color: '#666' }}>
+            • 여러 이미지를 선택할 수 있습니다.
+            <br />
+            • 각 이미지는 최대 10MB까지 업로드 가능합니다.
+            <br />
+            • 지원 형식: JPG, PNG, GIF, WebP
+          </p>
         </div>
 
         <div className="card">

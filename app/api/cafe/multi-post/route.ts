@@ -3,10 +3,17 @@ import { getSession, getNaverAccessToken } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { postToNaverCafe } from '@/lib/naver'
 
+interface ImageData {
+  data: string // base64 인코딩된 이미지 데이터
+  filename: string
+  contentType?: string
+}
+
 interface MultiPostRequest {
   targets: Array<{ clubId: string; menuId: string }>
   subject: string
   content: string
+  images?: ImageData[]
   options?: {
     openyn?: boolean
     searchopen?: boolean
@@ -40,7 +47,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body: MultiPostRequest = await request.json()
-    const { targets, subject, content, options } = body
+    const { targets, subject, content, images, options } = body
+
+    // 이미지 데이터를 Buffer로 변환
+    const imageBuffers = images
+      ? images.map((img) => {
+          // base64 데이터에서 data:image/...;base64, 부분 제거
+          const base64Data = img.data.includes(',')
+            ? img.data.split(',')[1]
+            : img.data
+          return {
+            buffer: Buffer.from(base64Data, 'base64'),
+            filename: img.filename,
+            contentType: img.contentType || 'image/jpeg',
+          }
+        })
+      : undefined
 
     if (!targets || !Array.isArray(targets) || targets.length === 0) {
       return NextResponse.json(
@@ -87,6 +109,7 @@ export async function POST(request: NextRequest) {
           menuId: target.menuId,
           subject,
           content,
+          images: imageBuffers,
           options,
         })
 
