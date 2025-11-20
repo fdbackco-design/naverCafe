@@ -95,6 +95,21 @@ export default function MultiPostPage() {
     }
   }
 
+  const selectCafeAll = (cafeTargets: CafeTarget[]) => {
+    const cafeIds = cafeTargets.map((t) => t.id)
+    const allSelected = cafeIds.every((id) => selectedTargets.has(id))
+    
+    const newSelected = new Set(selectedTargets)
+    if (allSelected) {
+      // 모두 선택되어 있으면 모두 해제
+      cafeIds.forEach((id) => newSelected.delete(id))
+    } else {
+      // 하나라도 선택 안 되어 있으면 모두 선택
+      cafeIds.forEach((id) => newSelected.add(id))
+    }
+    setSelectedTargets(newSelected)
+  }
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -240,50 +255,77 @@ export default function MultiPostPage() {
           </p>
         ) : (
           <>
-            <div style={{ marginBottom: '15px' }}>
-              <button
-                className="btn btn-secondary"
-                onClick={selectAll}
-                style={{ fontSize: '14px' }}
-              >
-                {selectedTargets.size === targets.length
-                  ? '전체 해제'
-                  : '전체 선택'}
-              </button>
-              <span style={{ marginLeft: '15px', color: '#666' }}>
-                {selectedTargets.size}개 선택됨
-              </span>
+            <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <button
+                  className="btn btn-primary"
+                  onClick={selectAll}
+                  style={{ fontSize: '14px', fontWeight: 'bold' }}
+                >
+                  {selectedTargets.size === targets.length
+                    ? '전체 해제'
+                    : '전체 선택'}
+                </button>
+                <span style={{ color: '#666', fontSize: '14px', fontWeight: '500' }}>
+                  총 {targets.length}개 중 {selectedTargets.size}개 선택됨
+                </span>
+              </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {Object.entries(groupedTargets).map(([cafeName, cafeTargets]) => (
-                <div key={cafeName} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '4px' }}>
-                  <h3 style={{ marginBottom: '10px', fontSize: '16px' }}>
-                    {cafeName}
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {cafeTargets.map((target) => (
-                      <div
-                        key={target.id}
-                        className="checkbox-item"
-                        style={{ marginLeft: '10px' }}
-                      >
-                        <input
-                          type="checkbox"
-                          id={target.id}
-                          checked={selectedTargets.has(target.id)}
-                          onChange={() => toggleTarget(target.id)}
-                        />
-                        <label
-                          htmlFor={target.id}
-                          style={{ margin: 0, cursor: 'pointer' }}
+              {Object.entries(groupedTargets).map(([cafeName, cafeTargets]) => {
+                const cafeSelectedCount = cafeTargets.filter((t) => selectedTargets.has(t.id)).length
+                const isCafeAllSelected = cafeSelectedCount === cafeTargets.length
+                
+                return (
+                  <div key={cafeName} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>
+                        {cafeName}
+                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '12px', color: '#666' }}>
+                          {cafeSelectedCount}/{cafeTargets.length}개 선택
+                        </span>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => selectCafeAll(cafeTargets)}
+                          style={{ 
+                            fontSize: '12px', 
+                            padding: '5px 10px',
+                            backgroundColor: isCafeAllSelected ? '#dc3545' : '#03c75a',
+                            color: 'white',
+                            border: 'none'
+                          }}
                         >
-                          게시판 ID: {target.menuId} (클럽: {target.clubId})
-                        </label>
+                          {isCafeAllSelected ? '전체 해제' : '전체 선택'}
+                        </button>
                       </div>
-                    ))}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {cafeTargets.map((target) => (
+                        <div
+                          key={target.id}
+                          className="checkbox-item"
+                          style={{ marginLeft: '10px' }}
+                        >
+                          <input
+                            type="checkbox"
+                            id={target.id}
+                            checked={selectedTargets.has(target.id)}
+                            onChange={() => toggleTarget(target.id)}
+                          />
+                          <label
+                            htmlFor={target.id}
+                            style={{ margin: 0, cursor: 'pointer' }}
+                          >
+                            게시판 ID: {target.menuId} (클럽: {target.clubId})
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </>
         )}
