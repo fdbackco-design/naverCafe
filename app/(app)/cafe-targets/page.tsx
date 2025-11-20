@@ -18,6 +18,7 @@ export default function CafeTargetsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<CafeTarget | null>(null)
   const [formData, setFormData] = useState({
+    cafeUrl: '',
     cafeName: '',
     clubId: '',
     menuId: '',
@@ -59,6 +60,7 @@ export default function CafeTargetsPage() {
         setShowForm(false)
         setEditing(null)
         setFormData({
+          cafeUrl: '',
           cafeName: '',
           clubId: '',
           menuId: '',
@@ -75,9 +77,76 @@ export default function CafeTargetsPage() {
     }
   }
 
+  /**
+   * 네이버 카페 URL에서 클럽 ID와 메뉴 ID 추출
+   * 예: https://cafe.naver.com/f-e/cafes/17614417/menus/30?viewType=L
+   * -> clubId: 17614417, menuId: 30
+   */
+  const parseCafeUrl = (url: string): { clubId: string; menuId: string } | null => {
+    if (!url || url.trim() === '') {
+      return null
+    }
+
+    try {
+      // 다양한 URL 패턴 지원
+      // 1. https://cafe.naver.com/f-e/cafes/17614417/menus/30
+      // 2. https://cafe.naver.com/cafes/17614417/menus/30
+      // 3. https://cafe.naver.com/카페명/17614417/30
+      // 4. ?clubid=17614417&menuid=30
+      
+      // 패턴 1, 2: cafes/17614417/menus/30
+      const cafesMenusMatch = url.match(/cafes\/(\d+)\/menus\/(\d+)/)
+      if (cafesMenusMatch) {
+        return {
+          clubId: cafesMenusMatch[1],
+          menuId: cafesMenusMatch[2],
+        }
+      }
+
+      // 패턴 3: /17614417/30 (직접 숫자 패턴)
+      const directMatch = url.match(/\/(\d{6,})\/(\d+)(?:\?|$)/)
+      if (directMatch) {
+        return {
+          clubId: directMatch[1],
+          menuId: directMatch[2],
+        }
+      }
+
+      // 패턴 4: 쿼리 파라미터
+      const clubIdMatch = url.match(/[?&]clubid=(\d+)/i)
+      const menuIdMatch = url.match(/[?&]menuid=(\d+)/i)
+      if (clubIdMatch) {
+        return {
+          clubId: clubIdMatch[1],
+          menuId: menuIdMatch ? menuIdMatch[1] : '',
+        }
+      }
+
+      return null
+    } catch (error) {
+      console.error('URL 파싱 오류:', error)
+      return null
+    }
+  }
+
+  const handleUrlChange = (url: string) => {
+    setFormData({ ...formData, cafeUrl: url })
+    
+    const parsed = parseCafeUrl(url)
+    if (parsed) {
+      setFormData((prev) => ({
+        ...prev,
+        cafeUrl: url,
+        clubId: parsed.clubId,
+        menuId: parsed.menuId,
+      }))
+    }
+  }
+
   const handleEdit = (target: CafeTarget) => {
     setEditing(target)
     setFormData({
+      cafeUrl: '', // 수정 시에는 URL 입력 필드 비움
       cafeName: target.cafeName,
       clubId: target.clubId,
       menuId: target.menuId,
@@ -139,6 +208,7 @@ export default function CafeTargetsPage() {
             setShowForm(!showForm)
             setEditing(null)
             setFormData({
+              cafeUrl: '',
               cafeName: '',
               clubId: '',
               menuId: '',
@@ -158,6 +228,20 @@ export default function CafeTargetsPage() {
           </h2>
           <form onSubmit={handleSubmit}>
             <label>
+              네이버 카페 URL *
+              <input
+                type="url"
+                value={formData.cafeUrl}
+                onChange={(e) => handleUrlChange(e.target.value)}
+                placeholder="https://cafe.naver.com/f-e/cafes/17614417/menus/30"
+                required={!editing}
+                style={{ marginBottom: '10px' }}
+              />
+              <p style={{ fontSize: '12px', color: '#666', marginTop: '5px', marginBottom: '10px' }}>
+                네이버 카페 게시판 URL을 입력하면 클럽 ID와 메뉴 ID가 자동으로 추출됩니다.
+              </p>
+            </label>
+            <label>
               카페명 *
               <input
                 type="text"
@@ -166,32 +250,45 @@ export default function CafeTargetsPage() {
                   setFormData({ ...formData, cafeName: e.target.value })
                 }
                 required
+                placeholder="예: 노인장기요양기관 실무카페"
               />
             </label>
-            <label>
-              클럽 ID (clubId) *
-              <input
-                type="text"
-                value={formData.clubId}
-                onChange={(e) =>
-                  setFormData({ ...formData, clubId: e.target.value })
-                }
-                required
-                placeholder="예: 12345678"
-              />
-            </label>
-            <label>
-              메뉴 ID (menuId) *
-              <input
-                type="text"
-                value={formData.menuId}
-                onChange={(e) =>
-                  setFormData({ ...formData, menuId: e.target.value })
-                }
-                required
-                placeholder="예: 1"
-              />
-            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <label>
+                클럽 ID (clubId) *
+                <input
+                  type="text"
+                  value={formData.clubId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, clubId: e.target.value })
+                  }
+                  required
+                  placeholder="자동 추출됨"
+                  readOnly={!!formData.cafeUrl && !editing}
+                  style={{
+                    backgroundColor: formData.cafeUrl && !editing ? '#f5f5f5' : 'white',
+                    cursor: formData.cafeUrl && !editing ? 'not-allowed' : 'text',
+                  }}
+                />
+              </label>
+              <label>
+                메뉴 ID (menuId) *
+                <input
+                  type="text"
+                  value={formData.menuId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, menuId: e.target.value })
+                  }
+                  required
+                  placeholder="자동 추출됨"
+                  readOnly={!!formData.cafeUrl && !editing}
+                  style={{
+                    backgroundColor: formData.cafeUrl && !editing ? '#f5f5f5' : 'white',
+                    cursor: formData.cafeUrl && !editing ? 'not-allowed' : 'text',
+                  }}
+                />
+              </label>
+            </div>
             <label>
               설명
               <input
@@ -200,7 +297,7 @@ export default function CafeTargetsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="선택사항"
+                placeholder="선택사항 (예: 자유게시판)"
               />
             </label>
             <div className="checkbox-item">
